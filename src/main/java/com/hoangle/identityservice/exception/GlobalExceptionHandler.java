@@ -7,6 +7,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 
+
 @ControllerAdvice
 public class GlobalExceptionHandler {
     //Whenever Runtime exception occurs, a self-defined message will be returned.
@@ -15,13 +16,14 @@ public class GlobalExceptionHandler {
     ResponseEntity<ApiResponse> handlingRuntimeException(RuntimeException exception){
         ApiResponse apiResponse = new ApiResponse();
 
-        apiResponse.setCode(1001);
-        apiResponse.setMessage(exception.getMessage());
+        apiResponse.setCode(ErrorCode.UNCATEGORIZED_EXCEPTION.getCode());
+        apiResponse.setMessage(ErrorCode.UNCATEGORIZED_EXCEPTION.getMessage());
 
         return ResponseEntity.badRequest().body(apiResponse);
     }
 
     //Handling Exception for AppException
+    //Whenever trigger AppException, Java find here
     @ExceptionHandler(value = AppException.class)
     ResponseEntity<ApiResponse> handlingAppException(AppException exception){
         ErrorCode errorCode = exception.getErrorCode();
@@ -34,8 +36,20 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(value = MethodArgumentNotValidException.class)
-    ResponseEntity<String> handlingValidateException(MethodArgumentNotValidException exception){
+    ResponseEntity<ApiResponse> handlingValidateException(MethodArgumentNotValidException exception){
         //Exception for field in request
-        return ResponseEntity.badRequest().body(exception.getFieldError().getDefaultMessage());
+        ErrorCode errorCode = ErrorCode.INVALID_KEY;
+        String enumKey = exception.getFieldError().getDefaultMessage();
+        try {
+            errorCode = ErrorCode.valueOf(enumKey);
+        }catch (IllegalArgumentException e){
+
+        }
+
+        ApiResponse apiResponse = new ApiResponse();
+        apiResponse.setCode(errorCode.getCode());
+        apiResponse.setMessage(errorCode.getMessage());
+
+        return ResponseEntity.badRequest().body(apiResponse);
     }
 }
